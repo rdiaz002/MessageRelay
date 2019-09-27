@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreference
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:defaultValue="false"
+        android:key="Service_On_Off"
+        android:summary="Turns on or off the relay service"
+        android:title="Run Service" />
+    <EditTextPreference
+        android:summary="Change Host Address"
+        android:key="ip_address"
+        android:title="Set the Host Sever Address"
+        />
+    <EditTextPreference
+        android:summary="Change Host Port"
+        android:key="port"
+        android:title="Set the Host Sever Port"
+        />
+</PreferenceScreen>
