@@ -8,18 +8,15 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
-import android.telephony.TelephonyManager;
 import android.util.Log;
-
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
+import androidx.preference.PreferenceManager;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -34,13 +31,15 @@ public class RelayService extends Service {
     private final String CHANNEL_ID = "MESSAGE_RELAY_CHANNEL";
     private int NOTIID = 111010;
     private Notification builder;
+    private String IP_ADDRESS = "127.0.0.1";
+    private int PORT = 8080;
+
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
             Log.d("reci", intent.getAction());
             //TODO: Differentiate between actions
             //TODO: disconnect socket depending on action
-            String msgBuffer = "";
             RelayProtocol socketWriter = new RelayProtocol(out);
 
             if ("Connect/Disconnect".equals(intent.getAction())) {
@@ -52,18 +51,19 @@ public class RelayService extends Service {
                 socketWriter.write(msgs);
                 new Thread(socketWriter).start();
             }
+            }
 
-        }
+
     };
 
     private Runnable connectSocket = new Runnable() {
         @Override
         public void run() {
             try {
-                SOCKET_CONNECTED = true;
-                mSoc = new Socket("10.0.2.2", 8080);
+
+                mSoc = new Socket(IP_ADDRESS, PORT);
                 out = new PrintWriter(mSoc.getOutputStream(), true);
-                Log.d("serv", "connected");
+                SOCKET_CONNECTED = true;
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -82,6 +82,7 @@ public class RelayService extends Service {
         Log.d("reci", "created");
 
         filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+        filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         filter.addAction("Connect/Disconnect");
 
         Intent intent = new Intent("Connect/Disconnect");
@@ -89,12 +90,11 @@ public class RelayService extends Service {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
 
         builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setSmallIcon(R.drawable.ic_noun_signal_1608606)
                 .setContentTitle("Message Relay")
-                .setContentText("Connect/Disconnect the Message Relay Service")
+                .setContentText("Message Relay Service is Running")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setOngoing(true)
-                .addAction(R.drawable.ic_launcher_background, "Start", pendingIntent)
                 .build();
         noti = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         noti.notify(CHANNEL_ID, NOTIID, builder);
@@ -106,12 +106,15 @@ public class RelayService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("reci", "start");
-
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        IP_ADDRESS = pref.getString("ip_address","127.0.0.1");
+        PORT= Integer.parseInt(pref.getString("port","8080"));
         SERVICE_RUNNING = true;
         if (!SOCKET_CONNECTED) {
             new Thread(connectSocket).start();
         }
-        return super.onStartCommand(intent, flags, startId);
+
+        return START_STICKY;
     }
 
     @Override

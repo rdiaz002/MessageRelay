@@ -1,7 +1,6 @@
 package com.example.messagerelay;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
 
 import android.content.Intent;
@@ -50,10 +49,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else if (s.equals("ip_address")) { //ip address preference changes
             IP_ADDRESS = s;
         } else if (s.equals("Service_On_Off")) { //Service Toggle
+            Intent relayService = new Intent(this,RelayService.class);
+
             if (sharedPreferences.getBoolean(s, false)) {
-                startService(new Intent(this, RelayService.class));
+                startService(relayService);
             } else {
-                stopService(new Intent(this, RelayService.class));
+                stopService(relayService);
             }
         }
 
