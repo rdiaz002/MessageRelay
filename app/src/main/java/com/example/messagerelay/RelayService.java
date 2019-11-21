@@ -13,6 +13,7 @@ import android.os.IBinder;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
+
 import androidx.core.app.NotificationCompat;
 import androidx.preference.PreferenceManager;
 
@@ -40,7 +41,7 @@ public class RelayService extends Service {
             Log.d("reci", intent.getAction());
             //TODO: Differentiate between actions
             //TODO: disconnect socket depending on action
-            RelayProtocol socketWriter = new RelayProtocol(out);
+            RelayProtocol socketWriter = new RelayProtocol(out, getApplicationContext());
 
             if ("Connect/Disconnect".equals(intent.getAction())) {
                 if (!SOCKET_CONNECTED) {
