@@ -1,4 +1,4 @@
-package com.example.messagerelay;
+package com.example.messagerelay.Model;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -17,6 +17,8 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import androidx.preference.PreferenceManager;
 
+import com.example.messagerelay.R;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -27,6 +29,8 @@ public class RelayService extends Service {
     private Socket mSoc;
     private PrintWriter out;
     private NotificationManager noti;
+    private Thread socketThread;
+
     static boolean SERVICE_RUNNING = false;
     static boolean SOCKET_CONNECTED = false;
     private final String CHANNEL_ID = "MESSAGE_RELAY_CHANNEL";
@@ -34,6 +38,7 @@ public class RelayService extends Service {
     private Notification builder;
     private String IP_ADDRESS = "127.0.0.1";
     private int PORT = 8080;
+    private RelayProtocol socketWriter;
 
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -41,7 +46,6 @@ public class RelayService extends Service {
             Log.d("reci", intent.getAction());
             //TODO: Differentiate between actions
             //TODO: disconnect socket depending on action
-            RelayProtocol socketWriter = new RelayProtocol(out, getApplicationContext());
 
             if ("Connect/Disconnect".equals(intent.getAction())) {
                 if (!SOCKET_CONNECTED) {
@@ -50,7 +54,6 @@ public class RelayService extends Service {
             } else if ("android.provider.Telephony.SMS_RECEIVED".equals(intent.getAction())) {
                 SmsMessage[] msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
                 socketWriter.write(msgs);
-                new Thread(socketWriter).start();
             }
             }
 
@@ -61,14 +64,12 @@ public class RelayService extends Service {
         @Override
         public void run() {
             try {
-
                 mSoc = new Socket(IP_ADDRESS, PORT);
                 out = new PrintWriter(mSoc.getOutputStream(), true);
+                socketWriter = new RelayProtocol(out, getApplicationContext());
                 SOCKET_CONNECTED = true;
-
             } catch (IOException e) {
                 e.printStackTrace();
-                Log.d("serv", "Not connected");
                 SOCKET_CONNECTED = false;
             }
         }
@@ -80,8 +81,6 @@ public class RelayService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d("reci", "created");
-
         filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
         filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         filter.addAction("Connect/Disconnect");
@@ -103,19 +102,8 @@ public class RelayService extends Service {
         registerReceiver(mReceiver, filter);
     }
 
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d("reci", "start");
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-        IP_ADDRESS = pref.getString("ip_address","127.0.0.1");
-        PORT= Integer.parseInt(pref.getString("port","8080"));
-        SERVICE_RUNNING = true;
-        if (!SOCKET_CONNECTED) {
-            new Thread(connectSocket).start();
-        }
-
-        return START_STICKY;
+    public static boolean isServiceRunning() {
+        return SERVICE_RUNNING;
     }
 
     @Override
@@ -125,15 +113,30 @@ public class RelayService extends Service {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        IP_ADDRESS = pref.getString("ip_address","127.0.0.1");
+        PORT= Integer.parseInt(pref.getString("port","8080"));
+        SERVICE_RUNNING = true;
+        if (!SOCKET_CONNECTED) {
+            socketThread = new Thread(connectSocket);
+            socketThread.start();
+        }
+
+        return START_STICKY;
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d("reci", "stopped");
         unregisterReceiver(mReceiver);
         if (SOCKET_CONNECTED) {
             try {
                 mSoc.close();
+                socketWriter.interrupt();
+                out.close();
                 SOCKET_CONNECTED = false;
-
             } catch (IOException e) {
                 e.printStackTrace();
             }

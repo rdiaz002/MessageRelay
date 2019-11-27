@@ -7,15 +7,18 @@
         android:defaultValue="false"
         android:key="Service_On_Off"
         android:summary="Turns on or off the relay service"
+        android:disableDependentsState="true"
         android:title="Run Service" />
     <EditTextPreference
         android:summary="Change Host Address"
         android:key="ip_address"
+        android:dependency="Service_On_Off"
         android:title="Set the Host Sever Address"
         />
     <EditTextPreference
         android:summary="Change Host Port"
         android:key="port"
+        android:dependency="Service_On_Off"
         android:title="Set the Host Sever Port"
         />
 </PreferenceScreen>
