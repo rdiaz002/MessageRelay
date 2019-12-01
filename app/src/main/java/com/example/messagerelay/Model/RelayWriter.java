@@ -1,4 +1,4 @@
-package com.example.messagerelay;
+package com.example.messagerelay.Model;
 
 
 import android.content.Context;
@@ -6,18 +6,21 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.telephony.SmsMessage;
-import android.util.Log;
 
 import java.io.PrintWriter;
+import java.util.LinkedList;
+import java.util.Queue;
 
-public class RelayProtocol implements Runnable {
+public class RelayWriter extends Thread {
     final PrintWriter out;
     private String msgBuffer = "";
+    private Queue<String> messageQueue;
     private Context context;
 
-    public RelayProtocol(PrintWriter out, Context context) {
+    public RelayWriter(PrintWriter out, Context context) {
         this.out = out;
         this.context = context;
+        messageQueue = new LinkedList<>();
     }
 
     public void write(SmsMessage[] content) {
@@ -28,14 +31,17 @@ public class RelayProtocol implements Runnable {
             msgBuffer += getContactName(sender_name, context) + (char) 0x01;
             msgBuffer += sender_name + (char) 0x02;
             msgBuffer += msg.getMessageBody() + (char) 0x03;
+            messageQueue.add(msgBuffer);
         }
-        Log.d("proto", msgBuffer);
+        this.start();
     }
 
     @Override
     public void run() {
         if (null != out) {
-            out.println(msgBuffer);
+            while (!messageQueue.isEmpty()) {
+                out.println(messageQueue.poll());
+            }
         }
         msgBuffer = "";
     }
