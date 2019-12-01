@@ -11,13 +11,13 @@ import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class RelayProtocol extends Thread {
+public class RelayWriter extends Thread {
     final PrintWriter out;
     private String msgBuffer = "";
     private Queue<String> messageQueue;
     private Context context;
 
-    public RelayProtocol(PrintWriter out, Context context) {
+    public RelayWriter(PrintWriter out, Context context) {
         this.out = out;
         this.context = context;
         messageQueue = new LinkedList<>();
