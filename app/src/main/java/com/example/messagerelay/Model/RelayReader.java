@@ -23,9 +23,14 @@ public class RelayReader extends Thread {
                 if (!input.ready()) {
                     continue;
                 }
-                String data = input.readLine();
-                String phone = data.substring(0, data.indexOf(0x02));
-                String msg = data.substring(data.indexOf(0x02));
+                StringBuilder data = new StringBuilder();
+                data.append(input.readLine());
+                while (input.ready()) {
+                    data.append('\n');
+                    data.append(input.readLine());
+                }
+                String phone = data.substring(0, data.indexOf("" + (char) 0x02));
+                String msg = data.substring(data.indexOf("" + (char) 0x02) + 1);
                 SendMessage(phone, msg);
             } catch (IOException e) {
                 e.printStackTrace();
