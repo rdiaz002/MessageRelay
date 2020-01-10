@@ -28,6 +28,7 @@ public class RelayWriter extends Thread {
         //data structure for communication with host software.
         for (SmsMessage msg : content) {
             String sender_name = msg.getOriginatingAddress();
+            //TODO:Move message buffer into this local scope. No longer neccessary to have it global.
             msgBuffer += getContactName(sender_name, context) + (char) 0x01;
             msgBuffer += sender_name + (char) 0x02;
             msgBuffer += msg.getMessageBody() + (char) 0x03;

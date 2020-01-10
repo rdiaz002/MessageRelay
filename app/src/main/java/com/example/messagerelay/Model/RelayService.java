@@ -58,6 +58,8 @@ public class RelayService extends Service {
             } else if ("android.provider.Telephony.SMS_RECEIVED".equals(intent.getAction())) {
                 SmsMessage[] msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
                 socketWriter.write(msgs);
+            } else if ("android.intent.action.BATTERY_CHANGED".equals(intent.getAction())) {
+                //TODO:SEND BATTERY MESSAGES.
             }
             }
 
@@ -91,7 +93,7 @@ public class RelayService extends Service {
         filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
         filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         filter.addAction("Connect/Disconnect");
-
+        filter.addAction("android.intent.action.BATTERY_CHANGED");
         Intent intent = new Intent("Connect/Disconnect");
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
